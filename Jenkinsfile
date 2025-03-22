@@ -1,9 +1,12 @@
 pipeline {
     agent any
     environment {
-        DOCKER_IMAGE = "iamjabastin/docker-app1:latest"  // Change this to your registry
-        CONTAINER_NAME = "docker-running-app-day5"
-        REGISTRY_CREDENTIALS = "docker-hub-jabastin"  // Jenkins credentials ID
+        // Define image names
+        BACKEND_IMAGE = "iamjabastin/docker-backend:latest"
+        FRONTEND_IMAGE = "iamjabastin/docker-frontend:latest"
+        // Define container names
+        BACKEND_CONTAINER = "docker-running-backend"
+        FRONTEND_CONTAINER = "docker-running-frontend"
     }
 
     stages {
@@ -15,9 +18,17 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build Backend Docker Image') {
             steps {
-                sh 'docker build -t $DOCKER_IMAGE .'
+                // Build the backend image using the Dockerfile in the backend folder.
+                sh 'docker build -t $BACKEND_IMAGE -f backend/dockerfile .'
+            }
+        }
+
+        stage('Build Frontend Docker Image') {
+            steps {
+                // Build the frontend image using the Dockerfile in the frontend folder.
+                sh 'docker build -t $FRONTEND_IMAGE -f frontend/dockerfile .'
             }
         }
 
@@ -29,28 +40,36 @@ pipeline {
             }
         }
 
-        stage('Push to Container Registry') {
+        stage('Push Docker Images') {
             steps {
-                sh 'docker push $DOCKER_IMAGE'
+                sh 'docker push $BACKEND_IMAGE'
+                sh 'docker push $FRONTEND_IMAGE'
             }
         }
 
-        stage('Stop & Remove Existing Container') {
+        stage('Stop & Remove Existing Containers') {
             steps {
                 script {
                     sh '''
-                    if [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
-                        docker stop $CONTAINER_NAME || true
-                        docker rm $CONTAINER_NAME || true
+                    if [ "$(docker ps -aq -f name=$BACKEND_CONTAINER)" ]; then
+                        docker stop $BACKEND_CONTAINER || true
+                        docker rm $BACKEND_CONTAINER || true
+                    fi
+                    if [ "$(docker ps -aq -f name=$FRONTEND_CONTAINER)" ]; then
+                        docker stop $FRONTEND_CONTAINER || true
+                        docker rm $FRONTEND_CONTAINER || true
                     fi
                     '''
                 }
             }
         }
 
-        stage('Run Docker Container') {
+        stage('Run Docker Containers') {
             steps {
-                sh 'docker run -d -p 5001:5000 --name $CONTAINER_NAME $DOCKER_IMAGE'
+                // Run backend container (exposing port 5000)
+                sh 'docker run -d -p 5000:5000 --name $BACKEND_CONTAINER $BACKEND_IMAGE'
+                // Run frontend container (exposing port 5001 mapped to container port 80)
+                sh 'docker run -d -p 5001:80 --name $FRONTEND_CONTAINER $FRONTEND_IMAGE'
             }
         }
     }
