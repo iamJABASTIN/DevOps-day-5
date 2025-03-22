@@ -20,15 +20,15 @@ pipeline {
 
         stage('Build Backend Docker Image') {
             steps {
-                // Build the backend image using the Dockerfile in the backend folder.
-                sh 'docker build -t $BACKEND_IMAGE -f backend/dockerfile .'
+                // Use the backend directory as the build context
+                sh 'docker build -t $BACKEND_IMAGE -f backend/dockerfile backend'
             }
         }
 
         stage('Build Frontend Docker Image') {
             steps {
-                // Build the frontend image using the Dockerfile in the frontend folder.
-                sh 'docker build -t $FRONTEND_IMAGE -f frontend/dockerfile .'
+                // Use the frontend directory as the build context
+                sh 'docker build -t $FRONTEND_IMAGE -f frontend/dockerfile frontend'
             }
         }
 
